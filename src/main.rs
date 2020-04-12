@@ -149,6 +149,9 @@ mod tests {
     #[test]
     fn test_get_coords() {
       assert_eq!(get_coords(2, 4), (2, 0));
+      assert_eq!(get_coords(0, 4), (0, 0));
+      assert_eq!(get_coords(5, 4), (1, 1));
+      assert_eq!(get_coords(8, 4), (0, 2));
     }
 
     #[test]
@@ -156,8 +159,12 @@ mod tests {
       let cells = vec![
         false, true, false, true,
         false, false, true, false,
+        false, false, false, false
       ];
 
       assert_eq!(get_alive_neighbours(&cells, 2, 4), 3);
+      assert_eq!(get_alive_neighbours(&cells, 0, 4), 1);
+      assert_eq!(get_alive_neighbours(&cells, 5, 4), 2);
+      assert_eq!(get_alive_neighbours(&cells, 8, 4), 0);
     }
 }
