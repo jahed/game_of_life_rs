@@ -5,8 +5,9 @@ use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
 use std::collections::HashMap;
 
-const CELL_SIZE: i32 = 8;
-const CELL_BOUNDS: graphics::Rect = graphics::Rect { x: 0.0, y: 0.0, w: CELL_SIZE as f32, h: CELL_SIZE as f32 };
+const SCREEN_SIZE: (f32, f32) = (1280.0, 720.0);
+const CELL_SIZE: f32 = 8.0;
+const CELL_BOUNDS: graphics::Rect = graphics::Rect { x: 0.0, y: 0.0, w: CELL_SIZE, h: CELL_SIZE };
 
 fn get_coords (index: usize, columns: i32) -> (i32, i32) {
   let x = index as f32 % columns as f32;
@@ -49,13 +50,15 @@ fn get_alive_neighbours(cells: &Vec<bool>, index: usize, columns: i32) -> i32 {
 }
 
 struct MainState {
+  mesh: graphics::Mesh,
   columns: i32,
   cells: Vec<bool>,
 }
 
 impl MainState {
-  fn new() -> GameResult<MainState> {
+  fn new(ctx: &mut Context) -> GameResult<MainState> {
     let s = MainState {
+      mesh: graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), CELL_BOUNDS, graphics::WHITE)?,
       columns: 64,
       cells: vec![
       false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
@@ -118,13 +121,12 @@ impl event::EventHandler for MainState {
 
   fn draw(&mut self, ctx: &mut Context) -> GameResult {
     graphics::clear(ctx, [0.0, 0.0, 0.0, 1.0].into());
-    let mesh = graphics::Mesh::new_rectangle(ctx, graphics::DrawMode::fill(), CELL_BOUNDS, graphics::WHITE)?;
 
     for index in 0..self.cells.len() {
       let alive = self.cells[index];
       if alive {
         let (x, y) = get_coords(index, self.columns);
-        graphics::draw(ctx, &mesh, (na::Point2::new((x * CELL_SIZE) as f32, (y * CELL_SIZE) as f32),))?;
+        graphics::draw(ctx, &self.mesh, (na::Point2::new(x as f32 * CELL_SIZE, y as f32 * CELL_SIZE),))?;
       }
     }
 
@@ -136,8 +138,10 @@ impl event::EventHandler for MainState {
 pub fn main() -> GameResult {
   let (ctx, event_loop) = &mut ggez::ContextBuilder::new("game_of_life", "Jahed Ahmed")
     .window_setup(ggez::conf::WindowSetup::default().title("Game of Life"))
+    .window_mode(ggez::conf::WindowMode::default().dimensions(SCREEN_SIZE.0, SCREEN_SIZE.1))
     .build()?;
-  let state = &mut MainState::new()?;
+
+  let state = &mut MainState::new(ctx)?;
   event::run(ctx, event_loop, state)
 }
 
