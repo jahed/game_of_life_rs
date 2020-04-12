@@ -5,56 +5,59 @@ use ggez::nalgebra as na;
 use ggez::{Context, GameResult};
 use std::collections::HashMap;
 
-const COLUMNS: u16 = 64;
-const CELL_SIZE: u16 = 4;
+const CELL_SIZE: i32 = 8;
 const CELL_BOUNDS: graphics::Rect = graphics::Rect { x: 0.0, y: 0.0, w: CELL_SIZE as f32, h: CELL_SIZE as f32 };
 
-fn get_coords (index: usize) -> (u16, u16) {
-  let x = index as f32 % COLUMNS as f32;
-  let y = (index as f32 / COLUMNS as f32).trunc();
-  (x as u16, y as u16)
+fn get_coords (index: usize, columns: i32) -> (i32, i32) {
+  let x = index as f32 % columns as f32;
+  let y = (index as f32 / columns as f32).trunc();
+  (x as i32, y as i32)
 }
 
-fn get_alive_neighbours(cells: &Vec<bool>, index: usize) -> u16 {
-  let mut result = 0;
-  let max_columns = COLUMNS - 1;
-  let max_rows = (cells.len() as u16 / COLUMNS) - 1;
-  let (x, y) = get_coords(index);
+fn get_alive_neighbours(cells: &Vec<bool>, index: usize, columns: i32) -> i32 {
+  let (x, y) = get_coords(index, columns);
 
-  if y > 0 && x > 0 && cells[((y - 1) * COLUMNS + (x - 1)) as usize] {
-    result += 1;
+  let max_x = columns - 1;
+  let max_y = (cells.len() as i32 / columns) - 1;
+
+  let neighbours = [
+    ((x - 1), (y - 1)),
+    (x, (y - 1)),
+    ((x + 1), (y - 1)),
+    ((x - 1), y),
+    ((x + 1), y),
+    ((x - 1), (y + 1)),
+    (x, (y + 1)),
+    ((x + 1), (y + 1))
+  ];
+
+  let mut result = 0;
+
+  for i in neighbours.iter() {
+    let (x, y) = *i;
+    if x < 0 || x > max_x || y < 0 || y > max_y {
+      continue;
+    }
+
+    let index = ((y * columns) + x) as usize;
+    if cells[index] {
+      result += 1;
+    }
   }
-  if y > 0 && cells[((y - 1) * COLUMNS + x) as usize] {
-    result += 1;
-  }
-  if y > 0 && x < max_columns && cells[((y - 1) * COLUMNS + (x + 1)) as usize] {
-    result += 1;
-  }
-  if x > 0 && cells[(y * COLUMNS + (x - 1)) as usize] {
-    result += 1;
-  }
-  if x < max_columns && cells[(y * COLUMNS + (x + 1)) as usize] {
-    result += 1;
-  }
-  if y < max_rows && x > 0 && cells[((y + 1) * COLUMNS + (x - 1)) as usize] {
-    result += 1;
-  }
-  if y < max_rows && cells[((y + 1) * COLUMNS + x) as usize] {
-    result += 1;
-  }
-  if y < max_rows && x < max_columns && cells[((y + 1) * COLUMNS + (x + 1)) as usize] {
-    result += 1;
-  }
+
   result
 }
 
 struct MainState {
+  columns: i32,
   cells: Vec<bool>,
 }
 
 impl MainState {
   fn new() -> GameResult<MainState> {
-    let s = MainState { cells: vec![
+    let s = MainState {
+      columns: 64,
+      cells: vec![
       false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
 false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
 false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, false, false, false, false, false, true, true, true, true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false,
@@ -81,7 +84,8 @@ false, false, false, false, false, false, false, false, false, false, false, fal
 false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
 false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
 false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
-    ] };
+    ]
+  };
     Ok(s)
   }
 }
@@ -92,7 +96,7 @@ impl event::EventHandler for MainState {
 
     for index in 0..self.cells.len() {
       let alive = self.cells[index];
-      let alive_neighbours = get_alive_neighbours(&self.cells, index);
+      let alive_neighbours = get_alive_neighbours(&self.cells, index, self.columns);
 
       if alive {
         if alive_neighbours < 2 || alive_neighbours > 3 {
@@ -119,7 +123,7 @@ impl event::EventHandler for MainState {
     for index in 0..self.cells.len() {
       let alive = self.cells[index];
       if alive {
-        let (x, y) = get_coords(index);
+        let (x, y) = get_coords(index, self.columns);
         graphics::draw(ctx, &mesh, (na::Point2::new((x * CELL_SIZE) as f32, (y * CELL_SIZE) as f32),))?;
       }
     }
@@ -135,4 +139,25 @@ pub fn main() -> GameResult {
     .build()?;
   let state = &mut MainState::new()?;
   event::run(ctx, event_loop, state)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::get_alive_neighbours;
+    use super::get_coords;
+
+    #[test]
+    fn test_get_coords() {
+      assert_eq!(get_coords(2, 4), (2, 0));
+    }
+
+    #[test]
+    fn test_get_alive_neighbours() {
+      let cells = vec![
+        false, true, false, true,
+        false, false, true, false,
+      ];
+
+      assert_eq!(get_alive_neighbours(&cells, 2, 4), 3);
+    }
 }
