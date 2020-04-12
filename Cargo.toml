@@ -1,7 +1,7 @@
 [package]
 name = "game_of_life_rs"
 version = "0.1.0"
-authors = ["Jahed <jahed.public@gmail.com>"]
+authors = ["Jahed Ahmed"]
 edition = "2018"
 
 [dependencies]
